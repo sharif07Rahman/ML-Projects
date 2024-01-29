@@ -1,1 +1,449 @@
+#CODE
+# Libraries 
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+# Import data using read_csv function from Pandas
+df = pd.read_csv("customer satisfaction.csv")
+df.head()
+# Information about the data
+df.info()
+'''gender, lifecycle, and satisfaction are categorical variables.
+Transform the categorical variables into numerical variables with the get_dummies function from Pandas.
+Set the drop_first parameter to true to not fall into the dummy variable trap.
+'''
+# Transform objects into binary variables
+df = pd.get_dummies(df, drop_first = True)
+df.head()
+'''Apply the describe function to extract the summary statistics. Take note of possible outliers. Next, compare the averages for each variable grouped by satisfied and non-satisfied. 
+Specify which variables have the highest deltas from one group to the other.First, compute the summary statistics by applying the describe function.
+'''
+# Summary Statistics
+df.describe()
+'''One possible way to check for outliers is to look at the min and max compared to the 25% and 75%. Based on that, there does not seem to be any issue with outliers.
+Compare the averages per satisfied and non-satisfied groups by applying the groupby function.
+'''
+# Average per satisfied and not satisfied
+df.groupby(['satisfaction_Satisfied']).mean()
+#The drivers where the average difference is highest are in the following variables:chocolate variety  Inspiration  Innovation
+'''Isolate X and Y and visualize a correlation matrix with a heatmap
+Create X and y objects that have independent and dependent variables, respectively. Build a correlation matrix with the newly created X data frame. Visualize it using a heatmap and set the size of the chart to (10,6). Customize the following parameters:
 
+annot. fmt. center. cmap. linewitdths. linecolor. 
+
+Isolate the dependent variable 'satisfaction_Satisfied' as y. Repeat the process for the independent variables by dropping the 'satisfaction_Satisfied' and 'id' variables to create the X object.
+
+# Isolate X and Y
+''''
+'''y = df.satisfaction_Satisfied
+X = df.drop(["id", "satisfaction_Satisfied"], axis=1)
+''''
+y = df.satisfaction_Satisfied
+X = df.drop(columns = ["id", "satisfaction_Satisfied"])
+# One possible solution is to start by building the correlation matrix and visualize using a simple heatmap, already with desired chart size.
+# Correlation heatmap #set size of the graph
+fig, ax = plt.subplots(figsize=(10,6)) 
+ 
+#Correlation heatmap
+sns.heatmap(data = X.corr(),
+            #include the figsize specified initially
+            ax = ax)
+plt.show()
+#Customize the specified parameters  annot, fmt, center, cmap, linewitdths, and linecolor to achieve a better visualization. The documentation contains other possible alternatives for customizing the heatmap.
+
+# Correlation heatmap
+#set size of the graph
+
+fig, ax = plt.subplots(figsize=(10,6)) 
+ 
+#Correlation heatmap
+sns.heatmap(data = X.corr(),
+            #annot will include the correlation values in the chart
+            annot = True,
+            #to specify the decimal cases format
+            fmt = '.1f',
+            #to include a middle point in the color map
+            center = 0,
+            #Specify which color gradient map to include
+            cmap = 'Spectral',
+            #Specify the width of the lines between the heatmap rectangules
+            linewidths = 1,
+            #Specify the color of the lines between rectangules
+            linecolor = 'orange',
+            #include the figsize specified initially
+            ax = ax)
+plt.show()
+'''Split data into training and test set and build a baseline model
+Use the train_test_split function to allocate 20% of the data to the test set. Use the stratification option to ensure a correct split and set a random_state to 1502. To finish this task, build a random forest classification model with 100 trees and a random_state also set to 1502.
+
+Import the train_test_split function and split the data into training and test sets.
+
+#Training and Test Split
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y,
+                                                    test_size = 0.2,
+                                                    random_state = 1502,
+                                                    stratify = y)
+Import the RandomForestClassifier function and create a model with the number of trees set to 100 and a random_sate equal to 1502. Fit the model to the training data.
+
+#Random Forest Model
+from sklearn.ensemble import RandomForestClassifier
+model = RandomForestClassifier(n_estimators = 100,
+                               random_state = 1502)
+model.fit(X_train, y_train)  
+
+'''
+#Training and Test Split
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y,
+                                                    test_size = 0.2,
+                                                    random_state = 1502,
+                                                    stratify = y)
+#Random Forest Model
+from sklearn.ensemble import RandomForestClassifier
+model = RandomForestClassifier(n_estimators = 100,
+                               random_state = 1502)
+model.fit(X_train, y_train)
+'''In this task, you will assess the model. Apply the model to make predictions. Compare them with the test set values and use the accuracy_score function to compute the overall model accuracy.
+
+Use the predict class to apply the model and include the X_test as the input.
+
+#Predictions
+predictions = model.predict(X_test)
+predictions[:5]
+
+Import the accuracy_score function and input the y_test and predictions to get the accuracy.
+
+#Model Assessment
+from sklearn.metrics import accuracy_score
+print(accuracy_score(y_test, predictions))
+'''
+#Predictions
+predictions = model.predict(X_test)
+predictions[:5]
+#Model Assessment
+from sklearn.metrics import accuracy_score
+print(accuracy_score(y_test, predictions))
+Prepare parameter tuning grid
+Check which parameters are in the baseline model. Build a grid, in the form of a Python dictionary, to tune the following parameters: n_estimators, max_depth, min_samples_split, min_samples_leaf, and max_features. Each parameter should have 2 options: one from the baseline mode and another possibility.
+
+Use the get_params method to fetch the model parameters.
+
+# Looking at the random forest params
+model.get_params()
+
+Create a dictionary including the five parameters and a different option.
+
+# Define the parameter grid to search over
+param_grid = {
+    'n_estimators': [100, 200],
+    'max_depth': [None, 5],
+    'min_samples_split': [2, 5],
+    'min_samples_leaf': [1, 2],
+    'max_features': ['sqrt', 'log2']
+}
+# Looking at the random forest params
+model.get_params()
+# Define the parameter grid to search over
+param_grid = {
+    'n_estimators': [100, 200],
+    'max_depth': [None, 5],
+    'min_samples_split': [2, 5],
+    'min_samples_leaf': [1, 2],
+    'max_features': ['sqrt', 'log2'] }
+'''
+In this task, you will implement parameter tuning and cross-validation for the random forest model. Start by importing the function GridSearchCV to perform cross-validation through the parameter grid. Next, build a baseline model, called base_model, setting the random_state equal to 1502 inside the Random Forest Classifier. Finally, use the GridSearchCV, setting the following optional parameters:
+
+3 folds as the cross-validation parameter.
+
+n_jobs as  -1.
+
+verbose equal to 1.
+
+Print the best parameters and score once finished.
+
+Import the function to implement cross-validation and parameter tuning.
+
+# Import function
+from sklearn.model_selection import GridSearchCV
+Build a baseline model to be inputted in the cross-validation and parameter tuning.
+
+# Create a random forest classifier object
+base_model = RandomForestClassifier(random_state = 1502)
+Apply the GridSearchCV function and fit it to the data.
+
+# Create a grid search object
+grid_search = GridSearchCV(base_model, 
+                           param_grid=param_grid, 
+                           cv=3, 
+                           n_jobs=-1, 
+                           verbose=1)
+ 
+# Fit the grid search object to the data
+grid_search.fit(X, y)
+'''
+# Import function
+from sklearn.model_selection import GridSearchCV
+#Build a baseline model to be inputted in the cross-validation and parameter tuning.bb
+# Create a random forest classifier object
+base_model = RandomForestClassifier(random_state = 1502)
+#Apply the GridSearchCV function and fit it to the data.
+# Create a grid search object
+grid_search = GridSearchCV(base_model, 
+                           param_grid=param_grid, 
+                           cv=3, 
+                           n_jobs=-1, 
+                           verbose=1)
+# Fit the grid search object to the data
+grid_search.fit(X, y)
+#Print the best parameters and score from the grid search.
+
+# Print the best parameters and score
+print("Best parameters: ", grid_search.best_params_)
+print("Best score: ", grid_search.best_score_)
+'''Explore feature importance
+In this task, you will uncover insights using the tuned random forest model. Extract the best parameters from the grid search and build a tuned model. Then, extract the feature importance from the model. Remove the demographical and customer-related features. From the remaining features, plot the top 5 using a horizontal bar plot.
+
+Start by isolating the best parameters.
+
+# Fetching best parameters
+best_params = grid_search.best_params_
+best_params
+
+Build a tuned model with the best parameters.
+
+# Tuned model
+tuned_model = RandomForestClassifier(max_depth = best_params['max_depth'],
+                                     max_features = best_params['max_features'],
+                                     min_samples_leaf = best_params['min_samples_leaf'],
+                                     min_samples_split = best_params['min_samples_split'],
+                                     n_estimators = best_params['n_estimators'],
+                                     random_state = 1502)
+tuned_model.fit(X, y)
+
+Extract the importance of the features from the tuned model.
+
+#Feature Importance
+importance = pd.Series(tuned_model.feature_importances_,
+                       index = X.columns.values,
+                       name = "importance")
+importance
+
+Remove the demographical and customer-related regressors to focus just on product/company satisfaction drivers.
+
+# Removing non-drivers
+importance  = importance.drop(["age", "gender_Male", "lifecycle_Returning"])
+Plot the top 5 most important drivers using a horizontal bar plot. A quick way is to use the plot function from Pandas.
+
+# Plotting feature Importance
+importance.nlargest(5).plot(kind = 'barh',
+                            figsize = (9,6))
+plt.show()
+
+'''
+# Fetching best parameters
+best_params = grid_search.best_params_
+best_params
+# Tuned model
+tuned_model = RandomForestClassifier(max_depth = best_params['max_depth'],
+                                     max_features = best_params['max_features'],
+                                     min_samples_leaf = best_params['min_samples_leaf'],
+                                     min_samples_split = best_params['min_samples_split'],
+                                     n_estimators = best_params['n_estimators'],
+                                     random_state = 1502)
+tuned_model.fit(X, y)
+#Feature Importance
+importance = pd.Series(tuned_model.feature_importances_,
+                       index = X.columns.values,
+                       name = "importance")
+
+importance
+#importance  Remove the demographical and customer-related regressors to focus just on product/company satisfaction drivers.
+
+# Removing non-drivers
+importance  = importance.drop(["age", "gender_Male", "lifecycle_Returning"])
+#Plot the top 5 most important drivers using a horizontal bar plot. A quick way is to use the plot function from Pandas.b
+# Plotting feature Importance
+importance.nlargest(5).plot(kind = 'barh',
+                            figsize = (9,6))
+plt.show()
+'''Build a chart to identify and classify drivers to present to stakeholders
+In this task, you will create a scatter plot between the drivers' importance (minus the demographic/customer KPIs) and the scoring for each of the drivers. Create a dataframe with 2 variables: drivers' importance and their average score. Next, build a scatter plot with the drivers' importance on the y-axis and the scoring on the x-axis. Customize the following elements:
+
+The chart figure size.
+
+The color of the scatterplot dots must be black.
+
+Add the name of each of the drivers to the chart next to the dots.
+
+Add vertical and horizontal lines that represent the mean of both variables.
+
+The right side of the vertical line must be painted green to flag items that the company is doing well and the left side should be red to flag items that the company should improve.
+
+Add a hollow white square bottom of the horizontal line to signal that it is not as important.
+
+Make recommendations to the company
+"""
+ 
+#Create a variable indicating the average score for each of the drivers, minus the demographic and customer KPIs.
+
+# Scoring of each driver
+scoring = X.drop(columns = ["age", "gender_Male", "lifecycle_Returning"]).mean().rename("scoring")
+#Build a dataframe with the drivers' importance and their average score.
+
+# Create DataFrame
+df_drivers = pd.concat([importance, scoring], axis = 1)
+#Set up an initial scatter plot and specify black as the color of the dots.
+
+#set size of the graph
+fig, ax = plt.subplots(figsize=(10,6)) 
+ 
+#Scatterplot
+plt.scatter(df_drivers["scoring"], 
+            df_drivers["importance"], 
+            color = "black")
+ 
+plt.show()
+'''Add the name of each of the drivers to the text. One way is to use the plt.text function in a loop that uses the x-y coordinates as inputs. Including the size as large 
+in the plt.text function makes sure the text is readable. Add '+ 0.01' to not overlap the dots.
+'''
+#set size of the graph
+fig, ax = plt.subplots(figsize=(10,6)) 
+ 
+#Scatterplot
+plt.scatter(df_drivers["scoring"], 
+            df_drivers["importance"], 
+            color = "black")
+ 
+#Adding text
+for idx, row in df_drivers.iterrows(): 
+    plt.text(row['scoring'] + 0.01, row['importance'] + 0.01, 
+             idx,
+             size = "large")
+ 
+plt.show()
+'''Apply a vertical line with axvline function and a horizontal line with the axhline function to create a 2 by 2 matrix.
+'''
+#set size of the graph
+fig, ax = plt.subplots(figsize=(10,6)) 
+ 
+#Scatterplot
+plt.scatter(df_drivers["scoring"], 
+            df_drivers["importance"], 
+            color = "black")
+ 
+#Adding text
+for idx, row in df_drivers.iterrows(): 
+    plt.text(row['scoring'] + 0.01, row['importance'] + 0.01, 
+             idx,
+             size = "large")
+ 
+#Add vertical and horizontal line
+plt.axvline(df_drivers.scoring.mean(), 
+            color = "b", 
+            linestyle = "dashed")
+plt.axhline(df_drivers.importance.mean(), 
+            color = "b", 
+            linestyle = "dashed")
+ 
+plt.show()
+'''One interpretation possible is that the drivers on the top left represent the drivers that customers value and the company is not performing. 
+The top right represents drivers where the company performs well and that are important to the customer. '''
+#Apply a green area right of the vertical line and a red area left of it with the axvspan function. Add a white area with the axhspan function and make it hollow by specifying the alpha parameter. 
+#One example is to set it to 0.4 like the example below.
+
+#set size of the graph
+fig, ax = plt.subplots(figsize=(10,6)) 
+ 
+# colouring
+ax.margins(0)
+ax.axvspan(df_drivers.scoring.mean(), 
+           df_drivers.scoring.max(), 
+           facecolor='green', 
+           alpha=0.5)
+ax.axvspan(df_drivers.scoring.min(), 
+           df_drivers.scoring.mean(), 
+           facecolor='red', 
+           alpha=0.5)
+ax.axhspan(df_drivers.importance.min(), 
+           df_drivers.importance.mean(), 
+           facecolor='white', 
+           alpha=0.4)
+ 
+ 
+#Scatterplot
+plt.scatter(df_drivers["scoring"], 
+            df_drivers["importance"], 
+            color = "black")
+ 
+#Adding text
+for idx, row in df_drivers.iterrows(): 
+    plt.text(row['scoring'] + 0.01, row['importance'] + 0.01, 
+             idx,
+             size = "large")
+ 
+#Add vertical and horizontal line
+plt.axvline(df_drivers.scoring.mean(), 
+            color = "b", 
+            linestyle = "dashed")
+plt.axhline(df_drivers.importance.mean(), 
+            color = "b", 
+            linestyle = "dashed")
+ 
+plt.show()
+However, notice that the extremes are now on the edge of the chart and that needs to be addressed.
+#One possibility to improve the visualization is to increase the areas of the colored spans. Increase the size of the y-axis by using the axhspan with the hollow parameter set to 0.
+
+#set size of the graph
+fig, ax = plt.subplots(figsize=(10,6)) 
+ 
+# colouring
+ax.margins(0)
+ax.axvspan(df_drivers.scoring.mean(), 
+           df_drivers.scoring.max()+0.05, 
+           facecolor='green', 
+           alpha=0.5)
+ax.axvspan(df_drivers.scoring.min()-0.05, 
+           df_drivers.scoring.mean(), 
+           facecolor='red', 
+           alpha=0.5)
+ax.axhspan(0, 
+           df_drivers.importance.mean(), 
+           facecolor='white', 
+           alpha=0.4)
+ax.axhspan(0, 
+           df_drivers.importance.max() + 0.05, 
+           facecolor='white', 
+           alpha=0)
+ 
+#Scatterplot
+plt.scatter(df_drivers["scoring"], 
+            df_drivers["importance"], 
+            color = "black")
+ 
+#Adding text
+for idx, row in df_drivers.iterrows(): 
+    plt.text(row['scoring'] + 0.01, row['importance'] + 0.01, 
+             idx,
+             size = "large")
+ 
+#Add vertical and horizontal line
+plt.axvline(df_drivers.scoring.mean(), 
+            color = "b", 
+            linestyle = "dashed")
+plt.axhline(df_drivers.importance.mean(), 
+            color = "b", 
+            linestyle = "dashed")
+ 
+plt.show()
+
+###Recommendation
+Based on the chart produced, the company should:
+
+Deep dive into the packaging driver and formulate a plan to address the customer pain points.
+
+Keep an eye on the following drivers: online ordering flow, chocolate uniqueness, and delivery options, and make sure that if the importance grows over time, it is addressed by the company.
+
+Play the chocolate varieties and payment options into their marketing campaigns to acquire and retain customers.
+'''
